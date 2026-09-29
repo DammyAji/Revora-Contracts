@@ -42,7 +42,7 @@
 use crate::{RevoraError, RevoraRevenueShare, RevoraRevenueShareClient};
 use soroban_sdk::{
     contract, contractimpl, contracttype, symbol_short, testutils::Address as _, Address, Env,
-    String,
+    String, Vec,
 };
 
 // ══════════════════════════════════════════════════════════════════════════════

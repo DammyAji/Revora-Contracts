@@ -23,19 +23,24 @@ fn setup_test() -> (Env, RevoraRevenueShareClient<'static>, Address) {
 fn register_offering(
     client: &RevoraRevenueShareClient<'static>,
     issuer: &Address,
-    namespace: Symbol,
+    namespace: &Symbol,
     token: &Address,
 ) {
-    let payout_asset = Address::generate(&client.env);
+    // The payout asset must be a real token contract: `register_offering`
+    // cross-checks `display_decimals` against its on-chain `decimals()`.
+    let payout_asset = crate::test_utils::create_token(&client.env, issuer);
+    let decimals = soroban_sdk::token::Client::new(&client.env, &payout_asset).decimals();
     client.register_offering(
         issuer,
-        &namespace,
+        &Vec::new(&client.env),
+        &1u32,
+        namespace,
         token,
-        &5000,
+        &5000u32,
         &payout_asset,
-        &0,
-        &symbol_short!(""),
-        &0,
+        &0i128,
+        &symbol_short!("USD"),
+        &decimals,
     );
 }
 
@@ -69,6 +74,9 @@ fn test_multi_token_offering_independence() {
 
     // Assert cross-deposit fails (tokenY into A)
     let res = client.try_deposit_revenue(&issuer, &namespace, &tokenA, &payTokenY, &amountB, &2);
-    assert!(res.is_err());
-    assert_eq!(res.unwrap_err().unwrap(), RevoraError::PaymentTokenMismatch as u32);
+    match res {
+        Ok(_) => panic!("cross-token deposit must be rejected"),
+        Err(Ok(err)) => assert_eq!(err, RevoraError::PaymentTokenMismatch),
+        Err(Err(host)) => panic!("host failure instead of a contract error: {:?}", host),
+    }
 }
