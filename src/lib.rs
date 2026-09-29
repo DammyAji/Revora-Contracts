@@ -399,29 +399,29 @@ mod test_compute_share_invariants;
 mod test_duplicates;
 #[cfg(test)]
 mod test_epoch_boundary_report;
+#[cfg(test)]
+mod test_estimate_transfer;
 mod test_event_indexed_v2;
 #[cfg(test)]
 mod test_event_indexed_v3;
 #[cfg(test)]
 mod test_merkle_canonical_order;
 #[cfg(test)]
-mod test_pending_issuer_transfer;
-#[cfg(test)]
 mod test_min_revenue_threshold_boundary;
+#[cfg(test)]
+mod test_pending_issuer_transfer;
 #[cfg(test)]
 mod test_testnet_mode;
 #[cfg(test)]
 mod test_time_windows;
-#[cfg(test)]
-mod test_estimate_transfer;
 // #[cfg(test)]
 // mod test_claim_transfer_fail;
 #[cfg(test)]
 mod test_accrual_reconciliation_prop;
 #[cfg(test)]
-mod test_close_period;
-#[cfg(test)]
 mod test_accrual_reconciliation_prop;
+#[cfg(test)]
+mod test_close_period;
 #[cfg(test)]
 mod test_close_period;
 #[cfg(test)]
@@ -429,12 +429,12 @@ mod test_compute_share_decomposition_prop;
 #[cfg(test)]
 mod test_disclosure;
 #[cfg(test)]
-mod test_get_payment_token;
-#[cfg(test)]
 mod test_faucet_metrics;
 /// Self-test module providing a `self_test()` entrypoint that runs contract-internal
 #[cfg(test)]
 mod test_faucet_seed;
+#[cfg(test)]
+mod test_get_payment_token;
 #[cfg(test)]
 mod test_multi_token_independence;
 #[cfg(test)]
@@ -9405,57 +9405,7 @@ impl RevoraRevenueShare {
                     .persistent()
                     .get(&DataKey3::HolderShareClass(offering_id.clone(), holder.clone(), sc))
                     .unwrap_or(0);
-                let delta = (share_bps as i128) - (old_share as i128);
-                temp_total_shares = temp_total_shares.saturating_add(delta);
-                temp_deltas.push_back((holder.clone(), delta));
-            }
-            if temp_total_shares > max_shares {
-                return Err(RevoraError::MaxTotalSupplySharesExceeded);
-            }
-            if temp_total_shares == max_shares {
-                env.events().publish(
-                    (
-                        EVENT_SUPPLY_CAP_SATURATED,
-                        offering_id.issuer.clone(),
-                        offering_id.namespace.clone(),
-                        offering_id.token.clone(),
-                    ),
-                    (temp_total_shares, max_shares),
-                );
-            }
-        }
-
-        // Now apply the changes
-        for i in 0..batch_len {
-            let (holder, share_bps) = holders.get(i).unwrap();
-            let slot = start_index.saturating_add(i);
-
-            // Write indexed slot for deterministic enumeration.
-            env.storage().persistent().set(
-                &DataKey::SnapshotHolder(offering_id.clone(), snapshot_ref, slot),
-                &(holder.clone(), share_bps),
-            );
-
-            // Write address-keyed entry for O(1) vote-weight lookup (issue #557).
-            env.storage().persistent().set(
-                &DataKey::SnapshotHolderShare(offering_id.clone(), snapshot_ref, holder.clone()),
-                &share_bps,
-            );
-
-            if slot.saturating_add(1) > slot_count {
-                slot_count = slot.saturating_add(1);
-            }
-
-            // Compute delta against previously persisted holder share.
-            let old_share: u32 = env
-                .storage()
-                .persistent()
-                .get(&DataKey::HolderShare(offering_id.clone(), holder.clone()))
-                .unwrap_or(0);
-
-            let new_total = current_total.saturating_sub(old_share).saturating_add(share_bps);
-            if new_total > 10_000 {
-                return Err(RevoraError::InvalidShareBps);
+                total_share += share;
             }
             total_share
         } else {
@@ -16174,9 +16124,9 @@ mod test_get_oracle_chain_adversarial;
 #[cfg(test)]
 mod test_merkle_proof_depth;
 #[cfg(test)]
-mod test_merkle_root_rotation;
-#[cfg(test)]
 mod test_merkle_proof_depth;
+#[cfg(test)]
+mod test_merkle_root_rotation;
 #[cfg(test)]
 mod test_snapshot_voting_weight;
 #[cfg(test)]
